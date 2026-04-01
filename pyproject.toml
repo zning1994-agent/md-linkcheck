@@ -1,0 +1,138 @@
+[project]
+name = "md-linkcheck"
+version = "0.1.0"
+description = "A Python CLI tool to check links in Markdown files"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [
+    { name = "Developer", email = "dev@example.com" }
+]
+keywords = ["markdown", "link", "check", "cli", "tool"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+
+dependencies = [
+    "click>=8.0.0",
+    "aiohttp>=3.8.0",
+    "rich>=13.0.0",
+    "markdown-it-py>=3.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",
+    "pytest-cov>=4.0.0",
+    "ruff>=0.1.0",
+    "mypy>=1.0.0",
+]
+
+[project.scripts]
+md-linkcheck = "md_linkcheck.cli:main"
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.md-linkcheck]
+# Configuration for md-linkcheck (can be in pyproject.toml)
+# Default values
+output = null
+format = "terminal"
+exclude = ["node_modules", ".git", "__pycache__", ".pytest_cache", ".mypy_cache"]
+concurrency = 10
+timeout = 10
+verbose = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_functions = ["test_*"]
+asyncio_mode = "auto"
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+[project]
+name = "md-linkcheck"
+version = "0.1.0"
+description = "A Python CLI tool to check links in Markdown files"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [
+    { name = "Developer", email = "dev@example.com" }
+]
+keywords = ["markdown", "link", "check", "cli", "tool"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+
+dependencies = [
+    "click>=8.0.0",
+    "aiohttp>=3.8.0",
+    "rich>=13.0.0",
+    "markdown-it-py>=3.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",
+    "pytest-cov>=4.0.0",
+    "ruff>=0.1.0",
+    "mypy>=1.0.0",
+]
+
+[project.scripts]
+md-linkcheck = "md_linkcheck.cli:main"
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.md-linkcheck]
+# Configuration for md-linkcheck (can be in pyproject.toml)
+# Default values
+output = null
+format = "terminal"
+exclude = ["node_modules", ".git", "__pycache__", ".pytest_cache", ".mypy_cache"]
+concurrency = 10
+timeout = 10
+verbose = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_functions = ["test_*"]
+asyncio_mode = "auto"
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
