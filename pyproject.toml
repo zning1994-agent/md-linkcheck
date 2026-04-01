@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "md-linkcheck"
-version = "0.1.0"
+version = "1.0.0"
 description = "A Python CLI tool for validating links in Markdown documentation"
 readme = "README.md"
 license = {text = "MIT"}
@@ -12,21 +12,25 @@ requires-python = ">=3.10"
 authors = [
     {name = "Developer"}
 ]
-keywords = ["markdown", "link", "checker", "cli", "validation"]
+keywords = ["markdown", "link", "check", "validator", "cli"]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Testing",
+    "Topic :: Text Processing :: Markup :: Markdown",
 ]
 dependencies = [
     "click>=8.0.0",
     "aiohttp>=3.8.0",
     "rich>=13.0.0",
-    "markdown-it-py>=2.0.0",
+    "markdown-it-py>=3.0.0",
 ]
 
 [project.optional-dependencies]
@@ -37,7 +41,7 @@ dev = [
 ]
 
 [project.scripts]
-md-linkcheck = "md_linkcheck.cli:cli"
+md-linkcheck = "md_linkcheck.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
@@ -45,4 +49,5 @@ where = ["src"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = ["test_*.py"]
+python_functions = ["test_*"]
 asyncio_mode = "auto"

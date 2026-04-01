@@ -1,134 +1,83 @@
 # md-linkcheck
 
-A Python CLI tool for validating links in Markdown documentation.
+一个用于验证 Markdown 文档中链接的 Python CLI 工具。
 
-## Features
+## 功能特性
 
-- **Recursive scanning**: Find all `.md` files in a directory tree
-- **Link extraction**: Extract HTTP/HTTPS links and relative file paths
-- **Async checking**: Efficient concurrent link validation using aiohttp
-- **Multiple output formats**: Terminal tables, JSON, or plain text
-- **Configurable**: TOML-based configuration support
-- **CI/CD friendly**: Exit codes for integration with build pipelines
+- 递归扫描指定目录下的所有 `.md` 文件
+- 提取 Markdown 中的 HTTP/HTTPS 链接和相对路径引用
+- 异步并发检查 HTTP 链接可达性
+- 检查相对路径文件是否存在
+- 支持多种输出格式：终端表格（rich）、JSON 文件、简洁文本
+- 支持排除特定目录（如 node_modules, .git）
 
-## Installation
-
-```bash
-pip install md-linkcheck
-```
-
-Or install from source:
+## 安装
 
 ```bash
-git clone https://github.com/md-linkcheck/md-linkcheck.git
-cd md-linkcheck
 pip install -e .
 ```
 
-## Quick Start
-
-Check all Markdown files in the current directory:
+## 使用方法
 
 ```bash
-md-linkcheck ./docs
-```
-
-Generate a JSON report:
-
-```bash
-md-linkcheck ./docs --format json --output report.json
-```
-
-Exclude specific directories:
-
-```bash
-md-linkcheck . --exclude node_modules --exclude build
-```
-
-## Usage
-
-```
-md-linkcheck [OPTIONS] [PATH]
-```
-
-### Options
-
-| Option | Description | Default |
-|--------|-------------|---------|
-| `--output, -o` | Output file path | (stdout) |
-| `--format, -f` | Output format: `terminal`, `json`, `text` | `terminal` |
-| `--exclude, -e` | Directories to exclude | - |
-| `--concurrency, -c` | Max concurrent checks | `10` |
-| `--timeout, -t` | Request timeout (seconds) | `10` |
-| `--verbose, -v` | Enable verbose output | `false` |
-| `--version` | Show version | - |
-| `--help` | Show help | - |
-
-## Configuration
-
-Create a `pyproject.toml` in your project root:
-
-```toml
-[tool.md-linkcheck]
-exclude = ["node_modules", ".git", "build"]
-concurrency = 10
-timeout = 10
-format = "terminal"
-```
-
-## Exit Codes
-
-- `0`: All links valid
-- `1`: One or more broken links found
-- `2`: Error occurred
-
-## Examples
-
-### Basic Usage
-
-```bash
-# Check current directory
-md-linkcheck .
-
-# Check specific directory
+# 基本用法
 md-linkcheck ./docs
 
-# Check with verbose output
-md-linkcheck ./docs --verbose
+# 指定输出格式
+md-linkcheck ./docs -f json -o report.json
+
+# 指定并发数和超时时间
+md-linkcheck ./docs -c 10 -t 5
+
+# 排除特定目录
+md-linkcheck ./docs --exclude node_modules --exclude .git
+
+# 详细输出
+md-linkcheck ./docs -v
 ```
 
-### Output Formats
+## 命令行参数
+
+- `PATH`: 要扫描的目录或文件路径
+- `-o, --output`: 输出文件路径（可选）
+- `-f, --format`: 输出格式 [rich, json, text]，默认 rich
+- `--exclude`: 要排除的目录名称（可多次使用）
+- `-c, --concurrency`: 并发请求数，默认 10
+- `-t, --timeout`: HTTP 请求超时时间（秒），默认 5
+- `-v, --verbose`: 详细输出模式
+
+## 输出示例
+
+```
+✅ Scan Complete
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Total Links: 25
+Valid: 23 | Broken: 2
+Duration: 1.23s
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+## 开发
 
 ```bash
-# Terminal (default)
-md-linkcheck ./docs
+# 安装开发依赖
+pip install -e ".[dev]"
 
-# JSON output
-md-linkcheck ./docs --format json --output report.json
+# 运行测试
+pytest
 
-# Plain text
-md-linkcheck ./docs --format text --output report.txt
+# 运行测试并查看覆盖率
+pytest --cov=md_linkcheck
 ```
 
-### Advanced Options
+## 技术栈
 
-```bash
-# Custom concurrency and timeout
-md-linkcheck ./docs --concurrency 20 --timeout 30
-
-# Exclude multiple directories
-md-linkcheck . --exclude node_modules --exclude .venv --exclude build
-```
-
-## How It Works
-
-1. **Scan**: Recursively find all `.md` files (excluding `node_modules`, `.git`, etc.)
-2. **Parse**: Extract links using markdown-it-py
-3. **Check**: 
-   - HTTP/HTTPS links: Send HEAD requests (async)
-   - Relative paths: Check file existence
-4. **Report**: Display results in chosen format
+- Python 3.10+
+- click 8.x - CLI 框架
+- aiohttp 3.x - 异步 HTTP 请求
+- rich 13.x - 终端输出美化
+- markdown-it-py - Markdown 解析
 
 ## License
 
-MIT License - see [LICENSE](LICENSE) for details.
+MIT
