@@ -12,22 +12,23 @@ requires-python = ">=3.10"
 authors = [
     {name = "Developer"}
 ]
-keywords = ["markdown", "link", "check", "cli", "documentation"]
+keywords = ["markdown", "link", "checker", "cli", "documentation"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Text Processing :: Markup :: Markdown",
 ]
-
 dependencies = [
     "click>=8.0.0",
     "aiohttp>=3.8.0",
     "rich>=13.0.0",
-    "markdown-it-py>=3.0.0",
 ]
 
 [project.optional-dependencies]
@@ -35,16 +36,32 @@ dev = [
     "pytest>=7.0.0",
     "pytest-asyncio>=0.21.0",
     "pytest-cov>=4.0.0",
+    "mypy>=1.0.0",
+    "ruff>=0.1.0",
 ]
 
 [project.scripts]
-md-linkcheck = "md_linkcheck.cli:main"
+md-linkcheck = "md_linkcheck.cli:cli"
 
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.setuptools.package-data]
+md_linkcheck = ["py.typed"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-python_files = ["test_*.py"]
-python_functions = ["test_*"]
 asyncio_mode = "auto"
+addopts = "-v"
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+select = ["E", "F", "I", "W"]
+ignore = []
