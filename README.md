@@ -8,7 +8,7 @@ A Python CLI tool for validating links in Markdown documentation.
 - Extract HTTP/HTTPS links and relative path references from Markdown
 - Async concurrent checking of HTTP link accessibility
 - Check if relative path files exist
-- Multiple output formats: terminal table (rich), JSON file, plain text
+- Multiple output formats: terminal table (rich), JSON file, concise text
 - Support excluding specific directories (e.g., node_modules, .git)
 - Basic statistics: total links, valid count, broken count, duration
 
@@ -80,12 +80,12 @@ JSON output example:
 }
 ```
 
-#### Plain Text
+#### Concise
 
-Simple text output:
+Simple concise text output:
 
 ```bash
-md-linkcheck ./docs -f text -o report.txt
+md-linkcheck ./docs -f concise -o report.txt
 ```
 
 ### Filtering
@@ -175,7 +175,7 @@ md-linkcheck ./docs \
 |--------|-------|-------------|---------|
 | `PATH` | - | Directory or file to scan | `.` (current directory) |
 | `--output` | `-o` | Output file path for the report | None (stdout) |
-| `--format` | `-f` | Output format: `terminal`, `json`, `text` | `terminal` |
+| `--format` | `-f` | Output format: `terminal`, `json`, `concise` | `terminal` |
 | `--exclude` | `-e` | Patterns to exclude from scanning (can be used multiple times) | None |
 | `--concurrency` | `-c` | Maximum number of concurrent HTTP checks | `10` |
 | `--timeout` | `-t` | Timeout in seconds for HTTP requests | `10` |

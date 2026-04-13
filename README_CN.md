@@ -8,7 +8,7 @@
 - 提取 Markdown 中的 HTTP/HTTPS 链接和相对路径引用
 - 异步并发检查 HTTP 链接可达性
 - 检查相对路径文件是否存在
-- 多种输出格式：终端表格（rich）、JSON 文件、纯文本
+- 多种输出格式：终端表格（rich）、JSON 文件、简洁文本
 - 支持排除特定目录（如 node_modules, .git）
 - 基础统计：总链接数、有效数、无效数、耗时
 
@@ -80,12 +80,12 @@ JSON 输出示例：
 }
 ```
 
-#### 纯文本
+#### 简洁文本
 
-简单文本输出：
+简单简洁文本输出：
 
 ```bash
-md-linkcheck ./docs -f text -o report.txt
+md-linkcheck ./docs -f concise -o report.txt
 ```
 
 ### 过滤
@@ -175,7 +175,7 @@ md-linkcheck ./docs \
 |------|------|------|--------|
 | `PATH` | - | 要扫描的目录或文件 | `.`（当前目录） |
 | `--output` | `-o` | 报告输出文件路径 | 无（标准输出） |
-| `--format` | `-f` | 输出格式：`terminal`、`json`、`text` | `terminal` |
+| `--format` | `-f` | 输出格式：`terminal`、`json`、`concise` | `terminal` |
 | `--exclude` | `-e` | 要排除的扫描模式（可多次使用） | 无 |
 | `--concurrency` | `-c` | 最大并发 HTTP 检查数 | `10` |
 | `--timeout` | `-t` | HTTP 请求超时时间（秒） | `10` |
