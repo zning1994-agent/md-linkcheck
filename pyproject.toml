@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "md-linkcheck"
-version = "1.0.0"
+version = "0.1.0"
 description = "A Python CLI tool for validating links in Markdown documentation"
 readme = "README.md"
 license = {text = "MIT"}
@@ -12,20 +12,17 @@ requires-python = ">=3.10"
 authors = [
     {name = "Developer"}
 ]
-keywords = ["markdown", "link", "check", "validator", "cli"]
+keywords = ["markdown", "link", "check", "cli", "documentation"]
 classifiers = [
-    "Development Status :: 4 - Beta",
-    "Environment :: Console",
+    "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
-    "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
-    "Topic :: Software Development :: Testing",
-    "Topic :: Text Processing :: Markup :: Markdown",
 ]
+
 dependencies = [
     "click>=8.0.0",
     "aiohttp>=3.8.0",
