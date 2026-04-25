@@ -1,22 +1,11 @@
-"""Pytest configuration and fixtures."""
+"""Pytest configuration and shared fixtures."""
 
 import pytest
-from pathlib import Path
+
+pytest_plugins = ["pytest_asyncio", "aioresponses"]
 
 
 @pytest.fixture
-def fixtures_dir():
-    """Return path to test fixtures directory."""
-    return Path(__file__).parent / "fixtures"
-
-
-@pytest.fixture
-def sample_markdown(fixtures_dir):
-    """Return path to sample markdown file."""
-    return fixtures_dir / "sample.md"
-
-
-@pytest.fixture
-def broken_markdown(fixtures_dir):
-    """Return path to broken markdown file."""
-    return fixtures_dir / "broken.md"
+def anyio_backend():
+    """Configure anyio backend for async tests."""
+    return "asyncio"
