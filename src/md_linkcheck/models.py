@@ -32,6 +32,7 @@ class CheckResult:
     is_valid: bool
     status_code: Optional[int] = None
     error_message: Optional[str] = None
+    duration: float = 0.0
 
 
 @dataclass
@@ -39,7 +40,8 @@ class ScanReport:
     """Summary report of a link scan."""
 
     total_links: int
-    valid_count: int
-    broken_count: int
+    valid_links: int
+    broken_links: int
     results: List[CheckResult] = field(default_factory=list)
     duration: float = 0.0
+    scanned_files: int = 0
