@@ -3,7 +3,7 @@
 import asyncio
 import time
 from pathlib import Path
-from typing import List, Optional
+from typing import List
 
 import aiohttp
 
@@ -53,17 +53,17 @@ class LinkChecker:
                     is_valid=is_valid,
                     status_code=response.status,
                 )
-        except aiohttp.ClientError as e:
-            return CheckResult(
-                link=link,
-                is_valid=False,
-                error_message=str(e),
-            )
         except asyncio.TimeoutError:
             return CheckResult(
                 link=link,
                 is_valid=False,
                 error_message="Request timeout",
+            )
+        except aiohttp.ClientError as e:
+            return CheckResult(
+                link=link,
+                is_valid=False,
+                error_message=str(e),
             )
 
     def _check_relative_path(self, link: Link) -> CheckResult:
@@ -95,8 +95,8 @@ class LinkChecker:
             CheckResult with validity status.
         """
         if link.link_type == LinkType.HTTP:
-            timeout = aiohttp.ClientTimeout(total=self.timeout)
-            async with aiohttp.ClientSession(timeout=timeout) as session:
+            timeout_config = aiohttp.ClientTimeout(total=self.timeout)
+            async with aiohttp.ClientSession(timeout=timeout_config) as session:
                 return await self._check_http_link(session, link)
         else:
             return self._check_relative_path(link)
@@ -109,7 +109,7 @@ class LinkChecker:
         index: int,
         total: int,
     ) -> CheckResult:
-        """Check a link with semaphore-based concurrency control.
+        """Check a link with semaphore concurrency control.
 
         Args:
             session: aiohttp client session.
@@ -147,9 +147,9 @@ class LinkChecker:
             return []
 
         semaphore = asyncio.Semaphore(self.concurrency)
-        timeout = aiohttp.ClientTimeout(total=self.timeout)
+        timeout_config = aiohttp.ClientTimeout(total=self.timeout)
 
-        async with aiohttp.ClientSession(timeout=timeout) as session:
+        async with aiohttp.ClientSession(timeout=timeout_config) as session:
             tasks = [
                 self._check_link_with_semaphore(
                     session, semaphore, link, idx + 1, total
