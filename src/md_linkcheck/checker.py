@@ -1,144 +1,186 @@
-"""Link checker module with async HTTP checking and verbose progress support."""
+"""Link checker module with async HTTP and path validation."""
 
 import asyncio
-import sys
+import time
 from pathlib import Path
 from typing import List, Optional
 
 import aiohttp
 
-from .models import CheckResult, Link, LinkType
+from md_linkcheck.models import CheckResult, Link, LinkType
 
 
 class LinkChecker:
-    """Asynchronous link checker with verbose progress display."""
+    """Checks links for validity using async HTTP requests and path validation."""
 
-    def __init__(self, concurrency: int = 10, timeout: int = 10, verbose: bool = False):
-        """
-        Initialize the link checker.
+    def __init__(self, timeout: int = 10, verbose: bool = False) -> None:
+        """Initialize the link checker.
 
         Args:
-            concurrency: Maximum number of concurrent requests.
-            timeout: Request timeout in seconds.
-            verbose: Enable verbose progress output.
+            timeout: Timeout in seconds for HTTP requests.
+            verbose: Enable verbose output during checking.
         """
-        self.concurrency = concurrency
         self.timeout = timeout
         self.verbose = verbose
-        self._checked_count = 0
-        self._total_count = 0
+        self.last_duration: float = 0.0
 
-    async def check_links(
-        self, links: List[Link], concurrency: Optional[int] = None, timeout: Optional[int] = None, verbose: Optional[bool] = None
-    ) -> List[CheckResult]:
-        """
-        Check all links asynchronously with progress display.
+    async def _on_request_start(
+        self,
+        session: aiohttp.ClientSession,
+        trace_config_ctx: dict,
+        params: aiohttp.TraceRequestStartParams,
+    ) -> None:
+        """Callback when HTTP request starts.
 
         Args:
-            links: List of links to check.
-            concurrency: Override default concurrency.
-            timeout: Override default timeout.
-            verbose: Override default verbose setting.
+            session: aiohttp client session.
+            trace_config_ctx: Trace context dictionary.
+            params: Request start parameters.
+        """
+        if self.verbose:
+            task_data = trace_config_ctx.get("task_data", {})
+            idx = task_data.get("index", 0)
+            total = task_data.get("total", 0)
+            url = str(params.url)
+            print(f"Checking {idx}/{total}: {url}")
+
+    def _create_trace_config(self) -> aiohttp.TraceConfig:
+        """Create aiohttp trace config for verbose logging.
 
         Returns:
-            List of check results.
+            Configured TraceConfig instance.
         """
-        if concurrency is not None:
-            self.concurrency = concurrency
-        if timeout is not None:
-            self.timeout = timeout
-        if verbose is not None:
-            self.verbose = verbose
-
-        self._total_count = len(links)
-        self._checked_count = 0
+        trace_config = aiohttp.TraceConfig()
 
         if self.verbose:
-            print(f"Starting link check for {self._total_count} links...", file=sys.stderr)
+            trace_config.on_request_start.append(self._on_request_start)
 
-        semaphore = asyncio.Semaphore(self.concurrency)
+        return trace_config
 
-        async with aiohttp.ClientSession() as session:
-            tasks = [self._check_with_semaphore(semaphore, session, link) for link in links]
-            results = await asyncio.gather(*tasks, return_exceptions=True)
+    async def _check_http_link(
+        self, session: aiohttp.ClientSession, link: Link
+    ) -> CheckResult:
+        """Check an HTTP/HTTPS link.
 
-        processed_results = []
-        for i, result in enumerate(results):
-            if isinstance(result, Exception):
-                processed_results.append(
-                    CheckResult(
-                        link=links[i],
-                        is_valid=False,
-                        error_message=str(result),
-                    )
-                )
-            else:
-                processed_results.append(result)
+        Args:
+            session: aiohttp client session.
+            link: The link to check.
 
-        return processed_results
-
-    async def _check_with_semaphore(self, semaphore: asyncio.Semaphore, session: aiohttp.ClientSession, link: Link) -> CheckResult:
-        """Check a link with semaphore control."""
-        async with semaphore:
-            return await self._check_link(session, link)
-
-    async def _check_link(self, session: aiohttp.ClientSession, link: Link) -> CheckResult:
-        """Check a single link and display progress if verbose."""
-        self._checked_count += 1
-
-        if self.verbose:
-            print(f"Checking {self._checked_count}/{self._total_count}: {link.url}", file=sys.stderr)
-
-        if link.link_type == LinkType.HTTP:
-            return await self._check_http(session, link)
-        elif link.link_type == LinkType.RELATIVE_PATH:
-            return self._check_relative_path(link)
-
-        return CheckResult(
-            link=link,
-            is_valid=False,
-            error_message="Unknown link type",
-        )
-
-    async def _check_http(self, session: aiohttp.ClientSession, link: Link) -> CheckResult:
-        """Check an HTTP/HTTPS link."""
+        Returns:
+            CheckResult with validity status.
+        """
         try:
-            async with session.head(link.url, allow_redirects=True, timeout=aiohttp.ClientTimeout(total=self.timeout)) as response:
+            async with session.head(link.url, allow_redirects=True) as response:
                 is_valid = 200 <= response.status < 400
                 return CheckResult(
                     link=link,
                     is_valid=is_valid,
                     status_code=response.status,
-                    error_message=None if is_valid else f"HTTP {response.status}",
                 )
-        except asyncio.TimeoutError:
-            return CheckResult(
-                link=link,
-                is_valid=False,
-                error_message="Timeout",
-            )
         except aiohttp.ClientError as e:
             return CheckResult(
                 link=link,
                 is_valid=False,
                 error_message=str(e),
             )
-        except Exception as e:
+        except asyncio.TimeoutError:
             return CheckResult(
                 link=link,
                 is_valid=False,
-                error_message=str(e),
+                error_message="Request timeout",
             )
 
     def _check_relative_path(self, link: Link) -> CheckResult:
-        """Check if a relative path file exists."""
+        """Check if a relative path exists.
+
+        Args:
+            link: The link to check.
+
+        Returns:
+            CheckResult with validity status.
+        """
         base_dir = link.file_path.parent
         target_path = base_dir / link.url
 
-        is_valid = target_path.exists()
+        is_valid = target_path.exists() and target_path.is_file()
         return CheckResult(
             link=link,
             is_valid=is_valid,
-            status_code=200 if is_valid else None,
             error_message=None if is_valid else "File not found",
         )
+
+    async def _check_link(
+        self,
+        session: Optional[aiohttp.ClientSession],
+        link: Link,
+    ) -> CheckResult:
+        """Check a single link based on its type.
+
+        Args:
+            session: aiohttp client session.
+            link: The link to check.
+
+        Returns:
+            CheckResult with validity status.
+        """
+        if link.link_type == LinkType.HTTP:
+            return await self._check_http_link(session, link)
+        else:
+            return self._check_relative_path(link)
+
+    async def _check_links_async(
+        self, links: List[Link], concurrency: int
+    ) -> List[CheckResult]:
+        """Check links asynchronously with limited concurrency.
+
+        Args:
+            links: List of links to check.
+            concurrency: Maximum concurrent checks.
+
+        Returns:
+            List of CheckResult objects.
+        """
+        semaphore = asyncio.Semaphore(concurrency)
+        results: List[CheckResult] = []
+        total = len(links)
+
+        async def check_with_semaphore(
+            link: Link, index: int
+        ) -> CheckResult:
+            trace_config_ctx = {"task_data": {"index": index, "total": total}}
+            async with semaphore:
+                if link.link_type == LinkType.HTTP:
+                    return await self._check_http_link(None, link)
+                else:
+                    return self._check_relative_path(link)
+
+        trace_config = self._create_trace_config()
+
+        async with aiohttp.ClientSession(
+            timeout=aiohttp.ClientTimeout(total=self.timeout),
+            trace_configs=[trace_config],
+        ) as session:
+            tasks = [
+                check_with_semaphore(link, idx + 1)
+                for idx, link in enumerate(links)
+            ]
+            results = await asyncio.gather(*tasks)
+
+        return list(results)
+
+    def check_links(
+        self, links: List[Link], concurrency: int = 10
+    ) -> List[CheckResult]:
+        """Check links synchronously.
+
+        Args:
+            links: List of links to check.
+            concurrency: Maximum concurrent checks.
+
+        Returns:
+            List of CheckResult objects.
+        """
+        start_time = time.time()
+        results = asyncio.run(self._check_links_async(links, concurrency))
+        self.last_duration = time.time() - start_time
+        return results
