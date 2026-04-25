@@ -13,52 +13,28 @@ from md_linkcheck.models import CheckResult, Link, LinkType
 class LinkChecker:
     """Checks links for validity using async HTTP requests and path validation."""
 
-    def __init__(self, timeout: int = 10, verbose: bool = False) -> None:
+    def __init__(
+        self,
+        timeout: int = 10,
+        concurrency: int = 10,
+        verbose: bool = False,
+    ) -> None:
         """Initialize the link checker.
 
         Args:
             timeout: Timeout in seconds for HTTP requests.
+            concurrency: Maximum number of concurrent checks.
             verbose: Enable verbose output during checking.
         """
         self.timeout = timeout
+        self.concurrency = concurrency
         self.verbose = verbose
         self.last_duration: float = 0.0
 
-    async def _on_request_start(
+    async def _check_http_link(
         self,
         session: aiohttp.ClientSession,
-        trace_config_ctx: dict,
-        params: aiohttp.TraceRequestStartParams,
-    ) -> None:
-        """Callback when HTTP request starts.
-
-        Args:
-            session: aiohttp client session.
-            trace_config_ctx: Trace context dictionary.
-            params: Request start parameters.
-        """
-        if self.verbose:
-            task_data = trace_config_ctx.get("task_data", {})
-            idx = task_data.get("index", 0)
-            total = task_data.get("total", 0)
-            url = str(params.url)
-            print(f"Checking {idx}/{total}: {url}")
-
-    def _create_trace_config(self) -> aiohttp.TraceConfig:
-        """Create aiohttp trace config for verbose logging.
-
-        Returns:
-            Configured TraceConfig instance.
-        """
-        trace_config = aiohttp.TraceConfig()
-
-        if self.verbose:
-            trace_config.on_request_start.append(self._on_request_start)
-
-        return trace_config
-
-    async def _check_http_link(
-        self, session: aiohttp.ClientSession, link: Link
+        link: Link,
     ) -> CheckResult:
         """Check an HTTP/HTTPS link.
 
@@ -109,78 +85,78 @@ class LinkChecker:
             error_message=None if is_valid else "File not found",
         )
 
-    async def _check_link(
-        self,
-        session: Optional[aiohttp.ClientSession],
-        link: Link,
-    ) -> CheckResult:
-        """Check a single link based on its type.
+    async def check_link(self, link: Link) -> CheckResult:
+        """Check a single link.
 
         Args:
-            session: aiohttp client session.
             link: The link to check.
 
         Returns:
             CheckResult with validity status.
         """
         if link.link_type == LinkType.HTTP:
-            return await self._check_http_link(session, link)
+            timeout = aiohttp.ClientTimeout(total=self.timeout)
+            async with aiohttp.ClientSession(timeout=timeout) as session:
+                return await self._check_http_link(session, link)
         else:
             return self._check_relative_path(link)
 
-    async def _check_links_async(
-        self, links: List[Link], concurrency: int
-    ) -> List[CheckResult]:
-        """Check links asynchronously with limited concurrency.
+    async def _check_link_with_semaphore(
+        self,
+        session: aiohttp.ClientSession,
+        semaphore: asyncio.Semaphore,
+        link: Link,
+        index: int,
+        total: int,
+    ) -> CheckResult:
+        """Check a link with semaphore-based concurrency control.
 
         Args:
-            links: List of links to check.
-            concurrency: Maximum concurrent checks.
+            session: aiohttp client session.
+            semaphore: Semaphore for concurrency control.
+            link: The link to check.
+            index: Current link index (1-based).
+            total: Total number of links.
 
         Returns:
-            List of CheckResult objects.
+            CheckResult with validity status.
         """
-        semaphore = asyncio.Semaphore(concurrency)
-        results: List[CheckResult] = []
-        total = len(links)
+        async with semaphore:
+            if self.verbose:
+                print(f"Checking {index}/{total}: {link.url}")
 
-        async def check_with_semaphore(
-            link: Link, index: int
-        ) -> CheckResult:
-            trace_config_ctx = {"task_data": {"index": index, "total": total}}
-            async with semaphore:
-                if link.link_type == LinkType.HTTP:
-                    return await self._check_http_link(None, link)
-                else:
-                    return self._check_relative_path(link)
+            if link.link_type == LinkType.HTTP:
+                return await self._check_http_link(session, link)
+            else:
+                return self._check_relative_path(link)
 
-        trace_config = self._create_trace_config()
-
-        async with aiohttp.ClientSession(
-            timeout=aiohttp.ClientTimeout(total=self.timeout),
-            trace_configs=[trace_config],
-        ) as session:
-            tasks = [
-                check_with_semaphore(link, idx + 1)
-                for idx, link in enumerate(links)
-            ]
-            results = await asyncio.gather(*tasks)
-
-        return list(results)
-
-    def check_links(
-        self, links: List[Link], concurrency: int = 10
-    ) -> List[CheckResult]:
-        """Check links synchronously.
+    async def check_links(self, links: List[Link]) -> List[CheckResult]:
+        """Check multiple links concurrently.
 
         Args:
             links: List of links to check.
-            concurrency: Maximum concurrent checks.
 
         Returns:
             List of CheckResult objects.
         """
         start_time = time.time()
-        results = asyncio.run(self._check_links_async(links, concurrency))
+        total = len(links)
+
+        if total == 0:
+            self.last_duration = 0.0
+            return []
+
+        semaphore = asyncio.Semaphore(self.concurrency)
+        timeout = aiohttp.ClientTimeout(total=self.timeout)
+
+        async with aiohttp.ClientSession(timeout=timeout) as session:
+            tasks = [
+                self._check_link_with_semaphore(
+                    session, semaphore, link, idx + 1, total
+                )
+                for idx, link in enumerate(links)
+            ]
+            results = await asyncio.gather(*tasks)
+
         self.last_duration = time.time() - start_time
-        return results
+        return list(results)
