@@ -7,7 +7,7 @@ from typing import List, Optional
 
 
 class LinkType(Enum):
-    """Type of link found in markdown."""
+    """Type of link found in Markdown."""
 
     HTTP = "http"
     RELATIVE_PATH = "relative_path"
@@ -15,15 +15,13 @@ class LinkType(Enum):
 
 @dataclass
 class Link:
-    """Represents a link found in a markdown file."""
+    """Represents a link found in a Markdown file."""
 
     url: str
     link_type: LinkType
     file_path: Path
     line_number: int
-
-    def __str__(self) -> str:
-        return f"{self.url} (line {self.line_number} in {self.file_path})"
+    line_content: str = ""
 
 
 @dataclass
@@ -35,25 +33,13 @@ class CheckResult:
     status_code: Optional[int] = None
     error_message: Optional[str] = None
 
-    def __str__(self) -> str:
-        if self.is_valid:
-            return f"✓ {self.link.url} ({self.status_code})"
-        return f"✗ {self.link.url} - {self.error_message}"
-
 
 @dataclass
 class ScanReport:
-    """Complete scan report containing all results."""
+    """Summary report of a link scan."""
 
     total_links: int
     valid_count: int
     broken_count: int
     results: List[CheckResult] = field(default_factory=list)
     duration: float = 0.0
-
-    @property
-    def success_rate(self) -> float:
-        """Calculate success rate percentage."""
-        if self.total_links == 0:
-            return 100.0
-        return (self.valid_count / self.total_links) * 100
